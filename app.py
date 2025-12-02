@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import pickle
 from io import BytesIO
+import os
 import matplotlib.pyplot as plt
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
@@ -16,18 +17,42 @@ import json
 # --- Page Configuration ---
 st.set_page_config(page_title="HeartGuard", page_icon="❤️", layout="wide")
 
-# --- Robust Model and Scaler Loading ---
-try:
-    with open('model/heart_model.pkl', 'rb') as model_file:
-        model = pickle.load(model_file)
-    with open('model/scaler.pkl', 'rb') as scaler_file:
-        scaler = pickle.load(scaler_file)
-except Exception as e:
-    st.error(f"An error occurred while loading the model files: {e}")
-    st.error("This is likely because the model files are missing or corrupted. Please train the model first.")
-    st.info("To train the model, run this command in your terminal from the project's root directory:")
-    st.code("python utils/processing.py") 
+# ==========================================
+# 🚀 PERFORMANCE FIX: CACHED MODEL LOADING
+# ==========================================
+@st.cache_resource
+def load_model_resources():
+    """
+    Loads the model and scaler only ONCE.
+    Streamlit will keep these in memory for super-fast access.
+    """
+    try:
+        # Get the absolute path to ensure it works on the Cloud
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        model_path = os.path.join(base_dir, 'model', 'heart_model.pkl')
+        scaler_path = os.path.join(base_dir, 'model', 'scaler.pkl')
+
+        with open(model_path, 'rb') as model_file:
+            model = pickle.load(model_file)
+        with open(scaler_path, 'rb') as scaler_file:
+            scaler = pickle.load(scaler_file)
+        return model, scaler
+    except Exception as e:
+        return None, e
+
+# Load them now
+model, scaler = load_model_resources()
+
+# Check if loading failed
+if model is None:
+    st.error(f"CRITICAL ERROR: Could not load model files.")
+    st.error(f"Details: {scaler}") # 'scaler' variable holds the error message here
+    st.info("Did you upload the 'model/' folder to GitHub?")
     st.stop()
+
+# ==========================================
+# END OF PERFORMANCE FIX
+# ==========================================
 
 
 # --- Custom CSS for Styling ---
