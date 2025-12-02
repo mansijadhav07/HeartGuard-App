@@ -12,7 +12,7 @@ import os
 def get_connection():
     # Attempt to get the URL from Streamlit secrets (Cloud) or environment variables
     try:
-        db_url = st.secrets["DATABASE_URL"]
+        db_url = st.secrets["postgresql://postgres:Mansi@2005@db.stozmjpffihgoxksrunp.supabase.co:5432/postgres"]
     except Exception:
         # Fallback for local testing if secrets aren't set up yet
         # ideally, rely on st.secrets even locally
