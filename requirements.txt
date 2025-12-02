@@ -6,3 +6,4 @@ matplotlib
 reportlab
 bcrypt
 psycopg2-binary
+plotly

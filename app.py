@@ -10,6 +10,9 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 
 # --- NEW: Database Imports ---
+# Add these to your database_utils import line
+from database_utils import get_all_users_count, get_total_predictions_count, get_risk_distribution, get_all_predictions_dataframe
+import plotly.express as px  # You might need to add plotly to requirements.txt
 from database_utils import register_user, verify_user, save_prediction, get_prediction_history
 import json 
 # -----------------------------
@@ -468,6 +471,7 @@ if 'username' not in st.session_state:
     st.session_state.username = None
 
 # --- NEW: Sidebar Navigation (Professional UI) ---
+# --- NEW: Sidebar Navigation (Professional UI) ---
 def setup_sidebar():
     # 1. Custom Title
     st.sidebar.markdown('<div class="sidebar-title">❤️ HeartGuard </div>', unsafe_allow_html=True)
@@ -504,6 +508,15 @@ def setup_sidebar():
         if st.sidebar.button("📜 View History"):
             st.session_state.page = 'history'
             st.rerun()
+
+        # --- NEW: Admin Section (Visible only to 'admin') ---
+        if st.session_state.username == "admin":
+            st.sidebar.markdown("---")
+            st.sidebar.subheader("Admin Controls")
+            if st.sidebar.button("🛡️ Admin Dashboard"):
+                st.session_state.page = 'admin_dashboard'
+                st.rerun()
+        # ----------------------------------------------------
             
         st.sidebar.markdown("---")
         
@@ -996,6 +1009,48 @@ def render_history_page():
     if st.button("Start New Assessment"):
         st.session_state.page = 'assessment'
         st.rerun()
+#------------------------------------------------
+def render_admin_page():
+    st.markdown('<h1 style="text-align: center;">🛡️ Admin Dashboard</h1>', unsafe_allow_html=True)
+    
+    # 1. Key Metrics Row
+    col1, col2, col3, col4 = st.columns(4)
+    total_users = get_all_users_count()
+    total_preds = get_total_predictions_count()
+    high_risk, low_risk = get_risk_distribution()
+    
+    col1.metric("Total Users", total_users)
+    col2.metric("Total Assessments", total_preds)
+    col3.metric("High Risk Detected", high_risk, delta_color="inverse")
+    col4.metric("Low Risk Detected", low_risk)
+    
+    st.markdown("---")
+
+    # 2. Charts Row
+    c1, c2 = st.columns(2)
+    with c1:
+        st.subheader("Risk Distribution")
+        # Simple Pie Chart
+        if total_preds > 0:
+            labels = ['High Risk', 'Low Risk']
+            values = [high_risk, low_risk]
+            fig = px.pie(names=labels, values=values, color=labels, 
+                         color_discrete_map={'High Risk':'red', 'Low Risk':'green'})
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("No data available yet.")
+            
+    with c2:
+        st.subheader("Activity Log")
+        # Fetch Data
+        df = get_all_predictions_dataframe()
+        if not df.empty:
+            st.dataframe(df[['timestamp', 'username', 'prediction', 'probability']], height=300)
+        else:
+            st.info("No activity yet.")
+
+    # 3. Security Warning
+    st.warning("🔒 Restricted Area: Only authorized administrators should view this page.")
 # ----------------------------------------------------
 
 
@@ -1018,4 +1073,9 @@ elif st.session_state.page == 'assessment':
         st.rerun()
 elif st.session_state.page == 'results':
     render_results_page()
+elif st.session_state.page == 'admin_dashboard':
+    if st.session_state.logged_in and st.session_state.username == 'admin':
+        render_admin_page()
+    else:
+        st.error("Unauthorized")
 # ---------------------------------------------

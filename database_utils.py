@@ -151,5 +151,60 @@ def get_prediction_history(user_id):
     finally:
         conn.close()
 
+# --- ADMIN FUNCTIONS (Add to database_utils.py) ---
+
+def get_all_users_count():
+    """Returns the total number of registered users."""
+    conn = get_connection()
+    if not conn: return 0
+    try:
+        c = conn.cursor()
+        c.execute("SELECT COUNT(*) FROM users")
+        return c.fetchone()[0]
+    finally:
+        conn.close()
+
+def get_total_predictions_count():
+    """Returns total assessments made."""
+    conn = get_connection()
+    if not conn: return 0
+    try:
+        c = conn.cursor()
+        c.execute("SELECT COUNT(*) FROM predictions")
+        return c.fetchone()[0]
+    finally:
+        conn.close()
+
+def get_risk_distribution():
+    """Returns count of High Risk (1) vs Low Risk (0)."""
+    conn = get_connection()
+    if not conn: return 0, 0
+    try:
+        c = conn.cursor()
+        c.execute("SELECT prediction, COUNT(*) FROM predictions GROUP BY prediction")
+        rows = c.fetchall()
+        # Convert to dictionary {0: count, 1: count}
+        counts = {row[0]: row[1] for row in rows}
+        return counts.get(1, 0), counts.get(0, 0)
+    finally:
+        conn.close()
+
+def get_all_predictions_dataframe():
+    """Fetches ALL prediction records for the admin table."""
+    conn = get_connection()
+    if not conn: return pd.DataFrame()
+    try:
+        # Join with users table to see WHO the patient is
+        query = """
+            SELECT p.timestamp, u.username, p.prediction, p.probability, p.input_data 
+            FROM predictions p
+            JOIN users u ON p.user_id = u.id
+            ORDER BY p.timestamp DESC
+        """
+        return pd.read_sql(query, conn)
+    finally:
+        conn.close()
+
 # Initialize tables on first run
 init_db()
+
