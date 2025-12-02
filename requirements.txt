@@ -1,0 +1,8 @@
+streamlit
+pandas
+numpy
+scikit-learn
+matplotlib
+reportlab
+bcrypt
+psycopg2-binary
