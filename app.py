@@ -849,6 +849,41 @@ def render_results_page():
             prediction_text = "High Risk of Heart Disease"
             st.error(f"⚠️ {prediction_text} (Confidence: {probability:.1f}%)")
             st.markdown("Your results suggest a significant likelihood. It is **crucial** to consult with a healthcare provider for a detailed evaluation and guidance.")
+            
+            # --- NEW: Explainable AI (The "Why?") ---
+            st.markdown("### 🔍 Key Risk Factors Detected")
+            st.caption("Based on standard medical thresholds, the AI flagged these specific metrics:")
+            
+            risk_factors = []
+            # Check Cholesterol (Limit usually 200-240)
+            if input_data['chol'] > 240:
+                risk_factors.append(f"- **High Cholesterol:** {input_data['chol']} mg/dl (Healthy limit is <200)")
+            
+            # Check Blood Pressure (Limit usually 120-140)
+            if input_data['trestbps'] > 140:
+                risk_factors.append(f"- **High Blood Pressure:** {input_data['trestbps']} mm Hg (Healthy limit is <120)")
+            
+            # Check Chest Pain (If it is NOT Asymptomatic)
+            # Assuming index 3 is 'Asymptomatic' based on your list order
+            if input_data['cp'] != 3: 
+                risk_factors.append("- **Reported Chest Pain** symptoms")
+            
+            # Check ST Depression (ECG result)
+            if input_data['oldpeak'] > 1.0:
+                risk_factors.append(f"- **ECG ST Depression:** {input_data['oldpeak']} (Indicates potential heart stress)")
+
+            # Check Max Heart Rate (General rule: low max HR during exercise can be an issue)
+            if input_data['thalach'] < 100:
+                 risk_factors.append(f"- **Low Max Heart Rate:** {input_data['thalach']} bpm")
+            
+            # Display the factors
+            if risk_factors:
+                for factor in risk_factors:
+                    st.markdown(factor)
+            else:
+                st.markdown("- **Complex Risk Profile:** The risk is calculated based on a combination of Age, Sex, and other clinical patterns rather than a single high metric.")
+            # ----------------------------------------
+
         else:
             prediction_text = "Low Risk of Heart Disease"
             st.success(f"✅ {prediction_text} (Confidence: {probability:.1f}%)")
@@ -905,7 +940,7 @@ def render_results_page():
             st.session_state.page = 'home'
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
-
+        
 # --- NEW: Authentication Page Rendering Functions ---
 def render_login_page():
     st.markdown('<h1 style="text-align: center;">🔑 Welcome to HeartGuard</h1>', unsafe_allow_html=True)
